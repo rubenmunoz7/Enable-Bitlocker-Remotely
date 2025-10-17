@@ -3,7 +3,7 @@
  <img width=200px height=200px src="https://i.imgur.com/s1wF4HP.png" alt="Project logo"></a>
 </p>
 
-<h3 align="center">PowerShell script to enable BitLocker remotely via NinjaOne</h3>
+<h3 align="center">🔐 PowerShell script to enable BitLocker remotely via NinjaOne</h3>
 
 <div align="center">
 
@@ -12,7 +12,7 @@
 ---
 
 <p align="center"> 
- 🔐 A PowerShell script designed to remotely enable and manage BitLocker encrpytion using NinjaOne
+ 
 <br> 
 </p>
 
