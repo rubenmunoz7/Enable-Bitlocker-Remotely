@@ -36,11 +36,11 @@ To use the automation script:
 1. Set the automation script to run as SYSTEM in N1.
 2. Monitor the results through the N1 Output Monitor
 3. Output meaning:
-   NINJA_BITLOCKER: START
+  **NINJA_BITLOCKER: START**
    
      - The script launched/ran
        
-   NINJA_BITLOCKER: ALREADY_ENCRYPTED
+   **NINJA_BITLOCKER: ALREADY_ENCRYPTED**
 
      - The OS drive is already encrypted, *exit 0*
        
