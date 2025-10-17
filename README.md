@@ -12,7 +12,7 @@
 ---
 
 <p align="center"> 
-A PowerShell script designed to remotely enable and manage BitLocker encrpytion using NinjaOne
+ 🔐 A PowerShell script designed to remotely enable and manage BitLocker encrpytion using NinjaOne
 <br> 
 </p>
 
