@@ -10,9 +10,9 @@ Write-Host "NINJA_BITLOCKER: START"     # Marker for N1 log
 try {
     $v = Get-BitLockerVolume -MountPoint $os # Grab current Bitlocker state from the OS drive    
 
-    # Exit is it is already encrypted
+    # Output log if it is already encrypted
     if ($v -and $v.ProtectionStatus -eq 1){ # if drive is already encrypted
-        Write-Host "NINJA_BITLOCKER: ALREADY ENCRYPTED" # Output log
+        Write-Host "NINJA_BITLOCKER: ALREADY_ENCRYPTED" # Output log
         exit 0
     }
 
@@ -37,8 +37,8 @@ try {
     }
 
     # enable with TPM protector
-    Write-Host "NINJA_BLOCKER: ENABLE_ATTEMPT (TPMProtector)"
-    Enable-BitLocker -MountPoint $os -EncryptionMethod XtsAes256 -UsedSpaceOnly -TpmProtector   # Enable Bitlocker on C: drive
+    Write-Host "NINJA_BITLOCKER: ENABLE_ATTEMPT (TPMProtector)"
+    Enable-BitLocker -MountPoint $os -EncryptionMethod XtsAes256 -UsedSpaceOnly -TpmProtector   # Enable Bitlocker on C: drive, uses XTS-AES 256-bit encryption
 
     Start-Sleep 2
     $post = Get-BitlockerVolume -mountPoint $os     # Check post-encrpytion
