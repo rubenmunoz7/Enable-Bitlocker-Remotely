@@ -26,7 +26,7 @@
 ---
 
 ## 🧐 About <a name = "about"></a>
-This project automates BitLocker drive encryption through a PowerShell script that can be deployed either locally or via NinjaOne. It follows the NinjaOne guide written by *Peter Bretton (VP of Product Strategy @ NinjaOne)* and enables BitLocker on the System OS drive using the computer's TPM, or Trusted Platform Module. This PowerShell script checks if BitLocker is already active, verifies the TPM, initializes the TPM if needed, then enables BitLocker with XTS-AES encryption, just like it is shown in the NinjaOne Blog by Peter Bretton. 
+This script automates BitLocker drive encryption through a PowerShell script that can be deployed either locally or via NinjaOne. It follows the NinjaOne guide written by *Peter Bretton (VP of Product Strategy @ NinjaOne)* and enables BitLocker on the System OS drive using the computer's TPM, or Trusted Platform Module. This PowerShell script checks if BitLocker is already active, verifies the TPM, initializes the TPM if needed, then enables BitLocker with XTS-AES encryption, just like it is shown in the NinjaOne Blog by Peter Bretton. 
 
 ---
 
