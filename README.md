@@ -37,20 +37,35 @@ To use the automation script:
 2. Monitor the results through the N1 Output Monitor
 3. Output meaning:
    NINJA_BITLOCKER: START
+   
      - The script launched/ran
+     - 
    NINJA_BITLOCKER: ALREADY_ENCRYPTED
+
      - The OS drive is already encrypted, *exit 0*
+     - 
    **NINJA_BITLOCKER: TPM_READY=True**
+
      - The device has a TPM and is ready to use, the script will now enable BitLocker
+     - 
    **NINJA_BITLOCKER: TPM_READY=False**
+
      - TPM missing/disabled
+     - 
    **NINJA_BITLOCKER: ENABLE_ATTEMPT (TPMProtector)**
+
      - Script is calling TPM protector
+     - 
    **NINJA_BITLOCKER: STATUS=1**
+
      - ProtectionStatus=On means BitLocker was successfully enabled
+     - 
    **NINJA_BITLOCKER: ENABLED_OK**
+
      - Completed with no errors
+     - 
    **NINJA_BITLOCKER: ERROR:**
+
      - Exit code 1 when there is an error
 
 --
