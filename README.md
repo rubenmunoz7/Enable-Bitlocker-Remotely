@@ -69,11 +69,16 @@ To use the automation script:
      - Exit code 1 when there is an error
 
 --
-✅ Successful run example output: 
+✅ Successful run example output:
+
 NINJA_BITLOCKER: START
+
 NINJA_BITLOCKER: TPM_READY=True
+
 NINJA_BITLOCKER: ENABLE_ATTEMPT (TPMProtector)
+
 NINJA_BITLOCKER: STATUS=1
+
 NINJA_BITLOCKER: ENABLED_OK
 
 ---
