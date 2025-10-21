@@ -36,17 +36,27 @@ try {
         exit 2 # error code
     }
 
-    # enable with TPM protector
-    Write-Host "NINJA_BITLOCKER: ENABLE_ATTEMPT (TPMProtector)"
-    Enable-BitLocker -MountPoint $os -EncryptionMethod XtsAes256 -UsedSpaceOnly -TpmProtector   # Enable Bitlocker on C: drive, uses XTS-AES 256-bit encryption
+    # Enable with TPM protector
+Write-Host "NINJA_BITLOCKER: ENABLE_ATTEMPT (TPMProtector)"
+Enable-BitLocker -MountPoint $os -EncryptionMethod XtsAes256 -UsedSpaceOnly -TpmProtector
 
-    Start-Sleep 2
-    $post = Get-BitlockerVolume -mountPoint $os     # Check post-encrpytion
-    Write-Host "NINJA_BITLOCKER: STATUS=$($post.ProtectionStatus)" # 1 = On
-    Write-Host "NINJA_BITLOCKER: ENABLED_OK"     # Log success
-    exit 0
+Start-Sleep 2
+
+# Add recovery key protector
+Add-BitLockerKeyProtector -MountPoint $os -RecoveryKeyProtector | Out-Null
+
+# Retrieve and log recovery key
+$post = Get-BitLockerVolume -MountPoint $os
+$rk = ($post.KeyProtector | Where-Object {$_.KeyProtectorType -eq 'RecoveryKey'}).RecoveryKey
+Write-Host "NINJA_BITLOCKER: RECOVERY_KEY=$rk"
+
+# Final status check
+Write-Host "NINJA_BITLOCKER: STATUS=$($post.ProtectionStatus)" # 1 = On
+Write-Host "NINJA_BITLOCKER: ENABLED_OK"
+exit 0
 }
 catch {
     Write-Error ("NINJA_BITLOCKER: ERROR: " + $_.Exception.Message)         # Write any errors, then exit
     exit 1
 }
+
