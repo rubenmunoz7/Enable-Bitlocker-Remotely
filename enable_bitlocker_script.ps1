@@ -1,7 +1,7 @@
 # Author: Ruben Munoz
 # Script to enable BitLocker through powershell. 
 # Credits for instructions go to Peter Bretton, VP, Product Strategy @ NinjaOne https://www.ninjaone.com/blog/how-to-remotely-manage-bitlocker-encryption-powershell-ninjarmm/
-# Initializes TPM if needed, and enables bitlocker on C: drive
+# Initializes TPM if needed, and enables bitlocker on "C:" drive
 # Prints markers for the output, and extracts recovery keys
 
 $os = $env:SystemDrive
@@ -12,18 +12,43 @@ try {
 
     # Output log if it is already encrypted
     if ($v -and $v.ProtectionStatus -eq 1){ # if drive is already encrypted
-        Write-Host "NINJA_BITLOCKER: ALREADY_ENCRYPTED" # Output log
+        Write-Host "NINJA_BITLOCKER: ALREADY_ENCRYPTED"
+
+        # Ensure a Recovery password protector exists 
+        $existingRP = ($v.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' })
+        if (-not $existingRP) {
+            Write-Host "NINJA_BITLOCKER: ADDING_RECOVERY_PASSWORD"
+            $add = Add-BitLockerKeyProtector -MountPoint $os -RecoveryPasswordProtector
+
+            # Retrieve and log the new 48-digit recovery password
+            $rp = ($add.RecoveryPasswordProtector | Select-Object -ExpandProperty RecoveryPassword)
+            if (-not $rp) {
+                $v = Get-BitLockerVolume -MountPoint $os
+                $rp = ($v.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1).RecoveryPassword
+            }
+            if ($rp) { Write-Host "NINJA_BITLOCKER: RECOVERY_PASSWORD=$rp" }
+
+            # back up
+            try {
+                $v = Get-BitLockerVolume -MountPoint $os
+                $rpId = ($v.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1).KeyProtectorId
+                if ($rpId) { BackupToAAD-BitLockerKeyProtector -MountPoint $os -KeyProtectorId $rpId | Out-Null }
+            } catch {}
+        } else {
+            Write-Host "NINJA_BITLOCKER: RECOVERY_PASSWORD_EXISTS"
+        }
+
         exit 0
     }
 
     # Check TPM status 
-    # IF a TPM exists, but isn't ready, then initialize if needed using "Initialize-tpm"
+    # IF a TPM exists, but isn't ready, then initialize if needed 
     $tpm = Get-Tpm -ErrorAction SilentlyContinue 
     $tpmReady = $false  # Default flag
     if ($tpm -and $tpm.TpmPresent) { # if tpm exists
         if (-not $tpm.TpmReady) { # If TPM is not ready, initialize it
             Initialize-Tpm -ErrorAction SilentlyContinue | Out-Null
-            Start-Sleep 2 # pause for 2 seconds
+            Start-Sleep 2 # sleep for 2 seconds
         }
         # Retry TPM state after initialization attempt
         $tpm = Get-Tpm -ErrorAction SilentlyContinue    # Recheck TPM
@@ -36,24 +61,27 @@ try {
         exit 2 # error code
     }
 
-    # Enable with TPM protector
-Write-Host "NINJA_BITLOCKER: ENABLE_ATTEMPT (TPMProtector)"
-Enable-BitLocker -MountPoint $os -EncryptionMethod XtsAes256 -UsedSpaceOnly -TpmProtector
+    # Enable with TPM + RecoveryPassword
+    Write-Host "NINJA_BITLOCKER: ENABLE_ATTEMPT (TPM)"
+    Enable-BitLocker -Mount $os -EncryptionMethod XtsAes256 -UsedSpaceOnly -TpmProtector
 
-Start-Sleep 2
+    # Add Recovery Password protector separately
+    Start-Sleep 3 # Sleep 3 seconds
+    Write-Host "NINJA_BITLOCKER: ADDING_RECOVERY_PASSWORD_AFTER_ENABLE"
+    Add-BitLockerKeyProtector -MountPoint $os -RecoveryPasswordProtector | Out-Null
 
-# Add recovery key protector
-Add-BitLockerKeyProtector -MountPoint $os -RecoveryKeyProtector | Out-Null
+    Start-Sleep 2
+    $post = Get-BitlockerVolume -MountPoint $os     # Check post-encryption
 
-# Retrieve and log recovery key
-$post = Get-BitLockerVolume -MountPoint $os
-$rk = ($post.KeyProtector | Where-Object {$_.KeyProtectorType -eq 'RecoveryKey'}).RecoveryKey
-Write-Host "NINJA_BITLOCKER: RECOVERY_KEY=$rk"
+    # backup of the new recovery password
+    try {
+        $rpId = ($post.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1).KeyProtectorId
+        if ($rpId) { BackupToAAD-BitLockerKeyProtector -MountPoint $os -KeyProtectorId $rpId | Out-Null }
+    } catch {}
 
-# Final status check
-Write-Host "NINJA_BITLOCKER: STATUS=$($post.ProtectionStatus)" # 1 = On
-Write-Host "NINJA_BITLOCKER: ENABLED_OK"
-exit 0
+    Write-Host "NINJA_BITLOCKER: STATUS=$($post.ProtectionStatus)" # 1 = On
+    Write-Host "NINJA_BITLOCKER: ENABLED_OK"     # Log success
+    exit 0
 }
 catch {
     Write-Error ("NINJA_BITLOCKER: ERROR: " + $_.Exception.Message)         # Write any errors, then exit
