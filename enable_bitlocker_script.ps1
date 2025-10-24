@@ -87,5 +87,3 @@ catch {
     Write-Error ("NINJA_BITLOCKER: ERROR: " + $_.Exception.Message)         # Write any errors, then exit
     exit 1
 }
-
-
