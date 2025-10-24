@@ -8,23 +8,23 @@ try {
     if ($v -and $v.ProtectionStatus -eq 1){ # if drive is already encrypted
         Write-Host "NINJA_BITLOCKER: ALREADY_ENCRYPTED"
 
-        # --- CHANGED: look for RecoveryPassword (not RecoveryKey/.bek)
+        # Ensure a Recovery PASSWORD protector exists (per GPO)
         $existingRP = ($v.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' })
         if (-not $existingRP) {
             Write-Host "NINJA_BITLOCKER: ADDING_RECOVERY_PASSWORD"
             $add = Add-BitLockerKeyProtector -MountPoint $os -RecoveryPasswordProtector
 
-            # Retrieve and log the new recovery password (48-digit)
+            # Retrieve and log the new 48-digit recovery password
             $rp = ($add.RecoveryPasswordProtector | Select-Object -ExpandProperty RecoveryPassword)
-            if (-not $rp) { 
-                # fallback to reading from the volume object if needed
+            if (-not $rp) {
                 $v = Get-BitLockerVolume -MountPoint $os
                 $rp = ($v.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1).RecoveryPassword
             }
             if ($rp) { Write-Host "NINJA_BITLOCKER: RECOVERY_PASSWORD=$rp" }
 
-            # Best effort backup to AAD if applicable
+            # Best-effort backup to AAD (no-op if not AAD-joined)
             try {
+                $v = Get-BitLockerVolume -MountPoint $os
                 $rpId = ($v.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1).KeyProtectorId
                 if ($rpId) { BackupToAAD-BitLockerKeyProtector -MountPoint $os -KeyProtectorId $rpId | Out-Null }
             } catch {}
@@ -55,14 +55,14 @@ try {
         exit 2 # error code
     }
 
-    # --- CHANGED: enable with TPM + RecoveryPassword to satisfy GPO
+    # Enable with TPM + RecoveryPassword to satisfy GPO
     Write-Host "NINJA_BITLOCKER: ENABLE_ATTEMPT (TPM+RecoveryPassword)"
     $op = Enable-BitLocker -MountPoint $os -EncryptionMethod XtsAes256 -UsedSpaceOnly -TpmProtector -RecoveryPasswordProtector
 
     Start-Sleep 2
     $post = Get-BitlockerVolume -MountPoint $os     # Check post-encryption
 
-    # Best effort backup of the new recovery password to AAD if available
+    # Best-effort backup of the new recovery password to AAD if available
     try {
         $rpId = ($post.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1).KeyProtectorId
         if ($rpId) { BackupToAAD-BitLockerKeyProtector -MountPoint $os -KeyProtectorId $rpId | Out-Null }
